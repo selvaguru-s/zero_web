@@ -1,25 +1,28 @@
 <template>
-  <div class="app">
+  <div class="min-h-screen bg-gray-900">
     <!-- Header -->
-    <header v-if="isAuthenticated" class="header">
-      <div class="header-content">
-        <div class="logo">
-          <span class="logo-icon">⚡</span>
-          ZMQ Control Panel
-        </div>
-        <div class="user-menu">
-          <div class="user-info">
-            <span class="user-email">{{ userInfo.email }}</span>
-            <span 
-              class="verification-status"
-              :class="{ 'verified': userInfo.verified }"
-            >
-              {{ userInfo.verified ? '✓ Verified' : '⚠ Unverified' }}
-            </span>
+    <header v-if="isAuthenticated" class="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-xl sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <div class="flex items-center space-x-3">
+            <span class="text-2xl">⚡</span>
+            <h1 class="text-xl font-bold text-white">ZMQ Control Panel</h1>
           </div>
-          <button class="btn btn-outline" @click="handleLogout">
-            Logout
-          </button>
+          
+          <div class="flex items-center space-x-4">
+            <div class="text-right">
+              <div class="text-sm text-white opacity-90">{{ userInfo.email }}</div>
+              <div class="text-xs" :class="userInfo.verified ? 'text-green-300' : 'text-yellow-300'">
+                {{ userInfo.verified ? '✓ Verified' : '⚠ Unverified' }}
+              </div>
+            </div>
+            <button 
+              @click="handleLogout"
+              class="px-4 py-2 text-sm font-medium text-white border border-white/30 rounded-lg hover:bg-white/10 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </div>
     </header>
@@ -42,9 +45,13 @@
     />
 
     <!-- Global Notifications -->
-    <div class="notifications">
+    <div class="fixed top-4 right-4 z-50">
       <Transition name="slide-down">
-        <div v-if="notification.message" class="notification" :class="notification.type">
+        <div 
+          v-if="notification.message" 
+          class="px-6 py-4 rounded-lg shadow-lg border min-w-80"
+          :class="notificationClasses"
+        >
           {{ notification.message }}
         </div>
       </Transition>
@@ -53,7 +60,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './firebase.js'
 import api from './api.js'
@@ -71,6 +78,16 @@ export default {
     const apiKey = ref('')
     const userInfo = ref({})
     const notification = ref({ message: '', type: '' })
+
+    const notificationClasses = computed(() => {
+      const base = 'font-medium'
+      const types = {
+        error: 'bg-red-900/80 text-red-200 border-red-700',
+        success: 'bg-green-900/80 text-green-200 border-green-700', 
+        info: 'bg-blue-900/80 text-blue-200 border-blue-700'
+      }
+      return `${base} ${types[notification.value.type] || types.info}`
+    })
 
     const showNotification = (message, type = 'info') => {
       notification.value = { message, type }
@@ -129,6 +146,7 @@ export default {
       apiKey,
       userInfo,
       notification,
+      notificationClasses,
       handleAuthenticated,
       handleLogout,
       handleError,
@@ -139,126 +157,6 @@ export default {
 </script>
 
 <style>
-.app {
-  min-height: 100vh;
-  background: #0f0f23;
-  color: #fff;
-}
-
-.header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 20px;
-  font-weight: 700;
-  color: white;
-}
-
-.logo-icon {
-  font-size: 24px;
-}
-
-.user-menu {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-.user-email {
-  font-size: 14px;
-  opacity: 0.9;
-}
-
-.verification-status {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.verification-status.verified {
-  color: #86efac;
-}
-
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-outline {
-  background: transparent;
-  color: white;
-  border: 2px solid rgba(255,255,255,0.3);
-}
-
-.btn-outline:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.5);
-}
-
-.notifications {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-}
-
-.notification {
-  padding: 16px 24px;
-  border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  font-weight: 500;
-  min-width: 300px;
-}
-
-.notification.error {
-  background: #7f1d1d;
-  color: #fca5a5;
-  border: 1px solid #991b1b;
-}
-
-.notification.success {
-  background: #166534;
-  color: #86efac;
-  border: 1px solid #22c55e;
-}
-
-.notification.info {
-  background: #1e40af;
-  color: #93c5fd;
-  border: 1px solid #3b82f6;
-}
-
 .slide-down-enter-active, .slide-down-leave-active {
   transition: all 0.3s ease;
 }
@@ -271,17 +169,5 @@ export default {
 .slide-down-leave-to {
   opacity: 0;
   transform: translateY(-20px);
-}
-
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    gap: 16px;
-    text-align: center;
-  }
-  
-  .user-info {
-    align-items: center;
-  }
 }
 </style>

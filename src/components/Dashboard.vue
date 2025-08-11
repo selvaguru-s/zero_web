@@ -1,7 +1,7 @@
 <template>
-  <div class="dashboard">
-    <div class="dashboard-content">
-      <div class="dashboard-grid">
+  <div class="min-h-screen">
+    <div class="max-w-7xl mx-auto p-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         <!-- API Key Card -->
         <ApiKeyCard 
           :api-key="apiKey"
@@ -23,6 +23,7 @@
         <!-- Connected Clients Card -->
         <ClientsCard 
           @error="$emit('error', $event)"
+          @success="$emit('success', $event)"
           ref="clientsCard"
         />
 
@@ -88,32 +89,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.dashboard {
-  min-height: calc(100vh - 80px);
-}
-
-.dashboard-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 40px 20px;
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 24px;
-  align-items: start;
-}
-
-@media (max-width: 768px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .dashboard-content {
-    padding: 24px 16px;
-  }
-}
-</style>

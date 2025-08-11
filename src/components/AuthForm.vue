@@ -1,71 +1,86 @@
 <template>
-  <div class="auth-container">
-    <div class="auth-card">
-      <div class="auth-header">
-        <h1 class="auth-title">{{ isLoginMode ? 'Welcome Back' : 'Create Account' }}</h1>
-        <p class="auth-subtitle">
-          {{ isLoginMode ? 'Sign in to access your ZMQ dashboard' : 'Register to get your API key' }}
-        </p>
-      </div>
-
-      <Transition name="fade">
-        <div v-if="errorMessage" class="alert alert-error">
-          {{ errorMessage }}
+  <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-900 via-gray-900 to-gray-900">
+    <div class="w-full max-w-md">
+      <div class="bg-gray-800/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+        <!-- Animated border -->
+        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse"></div>
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+            {{ isLoginMode ? 'Welcome Back' : 'Create Account' }}
+          </h1>
+          <p class="text-gray-400 mt-2">
+            {{ isLoginMode ? 'Sign in to access your ZMQ dashboard' : 'Register to get your API key' }}
+          </p>
         </div>
-      </Transition>
 
-      <Transition name="fade">
-        <div v-if="successMessage" class="alert alert-success">
-          {{ successMessage }}
-        </div>
-      </Transition>
+        <!-- Alerts -->
+        <Transition name="fade">
+          <div v-if="errorMessage" class="mb-6 p-4 bg-red-900/30 border border-red-700/50 rounded-lg text-red-200">
+            {{ errorMessage }}
+          </div>
+        </Transition>
 
-      <form @submit.prevent="handleSubmit" class="auth-form">
-        <div class="form-group">
-          <label for="email">Email Address</label>
-          <input 
-            type="email" 
-            id="email" 
-            v-model="email" 
-            :disabled="loading"
-            placeholder="Enter your email"
-            required
-            autocomplete="email"
+        <Transition name="fade">
+          <div v-if="successMessage" class="mb-6 p-4 bg-green-900/30 border border-green-700/50 rounded-lg text-green-200">
+            {{ successMessage }}
+          </div>
+        </Transition>
+
+        <!-- Form -->
+        <form @submit.prevent="handleSubmit" class="space-y-6">
+          <div>
+            <label for="email" class="block text-sm font-medium text-gray-200 mb-2">
+              Email Address
+            </label>
+            <input 
+              type="email" 
+              id="email" 
+              v-model="email" 
+              :disabled="loading"
+              placeholder="Enter your email"
+              required
+              class="w-full px-4 py-3 bg-gray-700/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+            >
+          </div>
+
+          <div>
+            <label for="password" class="block text-sm font-medium text-gray-200 mb-2">
+              Password
+            </label>
+            <input 
+              type="password" 
+              id="password" 
+              v-model="password" 
+              :disabled="loading"
+              :placeholder="isLoginMode ? 'Enter your password' : 'Choose a strong password (min 6 chars)'"
+              required
+              class="w-full px-4 py-3 bg-gray-700/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+            >
+          </div>
+
+          <button 
+            type="submit" 
+            :disabled="loading || !isFormValid"
+            class="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2"
           >
-        </div>
+            <div v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <span>{{ loading ? loadingText : submitButtonText }}</span>
+          </button>
+        </form>
 
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input 
-            type="password" 
-            id="password" 
-            v-model="password" 
+        <!-- Toggle Mode -->
+        <div class="mt-6 text-center border-t border-white/10 pt-6">
+          <button 
+            type="button"
+            @click="toggleMode" 
             :disabled="loading"
-            :placeholder="isLoginMode ? 'Enter your password' : 'Choose a strong password'"
-            required
-            autocomplete="current-password"
+            class="text-indigo-400 hover:text-indigo-300 text-sm font-medium underline transition-colors disabled:opacity-50"
           >
+            {{ toggleText }}
+          </button>
         </div>
-
-        <button 
-          type="submit" 
-          class="btn btn-primary btn-block" 
-          :disabled="loading || !isFormValid"
-        >
-          <span v-if="loading" class="loading-spinner"></span>
-          {{ loading ? loadingText : submitButtonText }}
-        </button>
-      </form>
-
-      <div class="auth-footer">
-        <button 
-          type="button"
-          class="toggle-link" 
-          @click="toggleMode" 
-          :disabled="loading"
-        >
-          {{ toggleText }}
-        </button>
       </div>
     </div>
   </div>
@@ -192,215 +207,11 @@ export default {
 </script>
 
 <style scoped>
-.auth-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 20px;
-  background: radial-gradient(ellipse at top, #1e1b4b, #0f0f23);
-}
-
-.auth-card {
-  background: rgba(26, 26, 46, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 48px;
-  border-radius: 20px;
-  box-shadow: 0 25px 80px rgba(0,0,0,0.5);
-  width: 100%;
-  max-width: 450px;
-  position: relative;
-  overflow: hidden;
-}
-
-.auth-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
-  background-size: 200% 100%;
-  animation: shimmer 3s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.auth-header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.auth-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.auth-subtitle {
-  color: #94a3b8;
-  font-size: 16px;
-}
-
-.auth-form {
-  margin-bottom: 32px;
-}
-
-.form-group {
-  margin-bottom: 24px;
-}
-
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #e2e8f0;
-  font-size: 14px;
-}
-
-input {
-  width: 100%;
-  padding: 16px 20px;
-  background: rgba(45, 45, 68, 0.8);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: #fff;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-input:focus {
-  outline: none;
-  border-color: #667eea;
-  background: rgba(45, 45, 68, 1);
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-}
-
-input::placeholder {
-  color: #64748b;
-}
-
-.btn {
-  padding: 16px 24px;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
-}
-
-.btn-block {
-  width: 100%;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-.auth-footer {
-  text-align: center;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.toggle-link {
-  background: none;
-  border: none;
-  color: #667eea;
-  cursor: pointer;
-  font-size: 14px;
-  text-decoration: underline;
-  transition: color 0.3s ease;
-  padding: 8px;
-}
-
-.toggle-link:hover:not(:disabled) {
-  color: #7c3aed;
-}
-
-.alert {
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 24px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.alert-error {
-  background: rgba(127, 29, 29, 0.3);
-  color: #fca5a5;
-  border: 1px solid rgba(153, 27, 27, 0.5);
-}
-
-.alert-success {
-  background: rgba(22, 101, 52, 0.3);
-  color: #86efac;
-  border: 1px solid rgba(34, 197, 94, 0.5);
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.3s ease;
 }
 
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
-}
-
-@media (max-width: 768px) {
-  .auth-card {
-    padding: 32px 24px;
-    margin: 16px;
-  }
-  
-  .auth-title {
-    font-size: 28px;
-  }
 }
 </style>

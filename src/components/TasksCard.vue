@@ -1,120 +1,132 @@
 <template>
-  <div class="card full-width">
-    <div class="card-header">
-      <h2 class="card-title">📋 Recent Tasks</h2>
-      <div class="header-actions">
-        <button 
-          class="btn btn-secondary btn-sm" 
-          @click="fetchTasks" 
-          :disabled="loading"
-        >
-          <span v-if="loading" class="loading-spinner"></span>
-          <span v-else>🔄</span>
-          Refresh
-        </button>
-      </div>
+  <div class="bg-gradient-to-br from-gray-800 to-gray-900 border border-indigo-500/20 rounded-2xl p-6 shadow-xl col-span-full">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-bold text-indigo-400 flex items-center space-x-2">
+        <span>📋</span>
+        <span>Recent Tasks</span>
+      </h2>
+      <button 
+        @click="fetchTasks" 
+        :disabled="loading"
+        class="px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2 text-sm"
+      >
+        <div v-if="loading" class="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
+        <span v-else>🔄</span>
+        <span>Refresh</span>
+      </button>
     </div>
 
-    <div v-if="tasks.length > 0" class="tasks-container">
-      <div class="tasks-header">
-        <div class="filter-tabs">
-          <button 
-            v-for="filter in statusFilters" 
-            :key="filter.value"
-            class="filter-tab"
-            :class="{ active: activeFilter === filter.value }"
-            @click="activeFilter = filter.value"
-          >
-            {{ filter.icon }} {{ filter.label }}
-            <span class="count">{{ getFilteredTasks(filter.value).length }}</span>
-          </button>
-        </div>
+    <div v-if="tasks.length > 0">
+      <!-- Filter Tabs -->
+      <div class="flex flex-wrap gap-2 mb-6">
+        <button 
+          v-for="filter in statusFilters" 
+          :key="filter.value"
+          @click="activeFilter = filter.value"
+          class="px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center space-x-2"
+          :class="activeFilter === filter.value 
+            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' 
+            : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 border border-white/10'"
+        >
+          <span>{{ filter.icon }}</span>
+          <span>{{ filter.label }}</span>
+          <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs font-bold">
+            {{ getFilteredTasks(filter.value).length }}
+          </span>
+        </button>
       </div>
 
-      <div class="tasks-list">
+      <!-- Tasks List -->
+      <div class="space-y-4 max-h-96 overflow-y-auto">
         <div 
           v-for="task in displayedTasks" 
           :key="task.id" 
-          class="task-item"
-          :class="'task-' + task.status"
+          class="bg-gray-700/50 border border-white/10 rounded-xl p-4 hover:border-indigo-500/30 hover:bg-gray-700/70 transition-all"
+          :class="getTaskBorderClass(task.status)"
         >
-          <div class="task-header">
-            <div class="task-id">
-              <span class="task-icon">{{ getTaskIcon(task.mode) }}</span>
-              <code>{{ task.id.substring(0, 8) }}...</code>
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center space-x-2">
+              <span class="text-lg">{{ getTaskIcon(task.mode) }}</span>
+              <code class="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded text-xs font-mono">
+                {{ task.id.substring(0, 8) }}...
+              </code>
             </div>
-            <div class="task-status">
-              <span class="status-badge" :class="'status-' + task.status">
-                {{ getStatusIcon(task.status) }} {{ task.status.toUpperCase() }}
-              </span>
-            </div>
-          </div>
-
-          <div class="task-details">
-            <div class="task-row">
-              <span class="task-label">Target:</span>
-              <span class="task-value">{{ task.target }}</span>
-            </div>
-            <div class="task-row">
-              <span class="task-label">Mode:</span>
-              <span class="task-value">{{ task.mode || 'shell' }}</span>
-            </div>
-            <div class="task-row">
-              <span class="task-label">Created:</span>
-              <span class="task-value">{{ formatDateTime(task.created_at) }}</span>
-            </div>
-            <div class="task-row" v-if="task.completed_at">
-              <span class="task-label">Completed:</span>
-              <span class="task-value">{{ formatDateTime(task.completed_at) }}</span>
-            </div>
-            <div class="task-row" v-if="task.exit_code !== null">
-              <span class="task-label">Exit Code:</span>
-              <span class="task-value" :class="{ 'success': task.exit_code === 0, 'error': task.exit_code !== 0 }">
-                {{ task.exit_code }}
-              </span>
-            </div>
-          </div>
-
-          <div class="task-payload">
-            <div class="payload-label">Payload:</div>
-            <div class="payload-content">
-              <pre>{{ task.payload.substring(0, 200) }}{{ task.payload.length > 200 ? '...' : '' }}</pre>
-            </div>
-          </div>
-
-          <div class="task-actions">
-            <button 
-              class="btn btn-outline btn-xs"
-              @click="viewFullTask(task)"
+            <span 
+              class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide"
+              :class="getStatusBadgeClass(task.status)"
             >
-              👁️ View Details
+              {{ getStatusIcon(task.status) }} {{ task.status }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div class="space-y-1">
+              <div class="text-xs text-gray-400 uppercase tracking-wide font-medium">Target</div>
+              <div class="text-sm text-gray-200 font-mono">{{ task.target }}</div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-xs text-gray-400 uppercase tracking-wide font-medium">Mode</div>
+              <div class="text-sm text-gray-200">{{ task.mode || 'shell' }}</div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-xs text-gray-400 uppercase tracking-wide font-medium">Created</div>
+              <div class="text-sm text-gray-200">{{ formatDateTime(task.created_at) }}</div>
+            </div>
+            <div v-if="task.exit_code !== null" class="space-y-1">
+              <div class="text-xs text-gray-400 uppercase tracking-wide font-medium">Exit Code</div>
+              <div 
+                class="text-sm font-semibold"
+                :class="task.exit_code === 0 ? 'text-green-300' : 'text-red-300'"
+              >
+                {{ task.exit_code }}
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-2">Payload</div>
+            <div class="bg-gray-800/80 border border-white/10 rounded-lg p-3 max-h-24 overflow-y-auto">
+              <pre class="text-xs text-gray-300 font-mono whitespace-pre-wrap break-words">{{ task.payload.substring(0, 200) }}{{ task.payload.length > 200 ? '...' : '' }}</pre>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <button 
+              @click="viewFullTask(task)"
+              class="px-3 py-1 bg-transparent border border-indigo-300/30 text-indigo-300 rounded-lg hover:bg-indigo-300/10 transition-colors text-xs font-medium"
+            >
+              👁️ Details
             </button>
             <button 
               v-if="task.status === 'completed' || task.status === 'failed'"
-              class="btn btn-outline btn-xs"
               @click="viewTaskLogs(task)"
+              class="px-3 py-1 bg-transparent border border-indigo-300/30 text-indigo-300 rounded-lg hover:bg-indigo-300/10 transition-colors text-xs font-medium"
             >
-              📄 View Logs
+              📄 Logs
             </button>
           </div>
         </div>
       </div>
 
-      <div v-if="filteredTasks.length > displayLimit" class="load-more">
-        <button class="btn btn-secondary" @click="loadMore">
+      <!-- Load More -->
+      <div v-if="filteredTasks.length > displayLimit" class="text-center mt-6 pt-4 border-t border-white/10">
+        <button 
+          @click="loadMore"
+          class="px-6 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+        >
           Load More Tasks ({{ filteredTasks.length - displayLimit }} remaining)
         </button>
       </div>
     </div>
 
-    <div v-else-if="!loading" class="empty-state">
-      <div class="empty-icon">📋</div>
-      <div class="empty-text">No tasks yet</div>
-      <div class="empty-subtext">Tasks will appear here when you send commands to clients</div>
+    <div v-else-if="!loading" class="text-center py-12 text-gray-500">
+      <div class="text-6xl mb-4 opacity-50">📋</div>
+      <div class="text-lg font-semibold mb-2">No tasks yet</div>
+      <div class="text-sm opacity-80">Tasks will appear here when you send commands to clients</div>
     </div>
 
-    <div v-if="loading && tasks.length === 0" class="loading-state">
-      <div class="loading-spinner large"></div>
+    <div v-if="loading && tasks.length === 0" class="text-center py-12 text-gray-500">
+      <div class="w-8 h-8 border-2 border-gray-500/30 border-t-gray-400 rounded-full animate-spin mx-auto mb-4"></div>
       <div>Loading tasks...</div>
     </div>
   </div>
@@ -183,6 +195,26 @@ export default {
       return icons[status] || '❓'
     }
 
+    const getStatusBadgeClass = (status) => {
+      const classes = {
+        queued: 'bg-yellow-900/30 text-yellow-300 border border-yellow-500/30',
+        running: 'bg-blue-900/30 text-blue-300 border border-blue-500/30',
+        completed: 'bg-green-900/30 text-green-300 border border-green-500/30',
+        failed: 'bg-red-900/30 text-red-300 border border-red-500/30'
+      }
+      return classes[status] || classes.queued
+    }
+
+    const getTaskBorderClass = (status) => {
+      const classes = {
+        completed: 'border-l-4 border-l-green-500',
+        failed: 'border-l-4 border-l-red-500',
+        running: 'border-l-4 border-l-blue-500',
+        queued: 'border-l-4 border-l-yellow-500'
+      }
+      return classes[status] || classes.queued
+    }
+
     const fetchTasks = async () => {
       loading.value = true
       try {
@@ -199,9 +231,8 @@ export default {
     }
 
     const viewFullTask = (task) => {
-      // You could implement a modal here or navigate to a detail page
       console.log('Full task details:', task)
-      // emit('show-task-details', task)
+      // You could implement a modal here
     }
 
     const viewTaskLogs = async (task) => {
@@ -209,24 +240,21 @@ export default {
         const logs = await api.getClientLogs(task.target, 100)
         const taskLogs = logs.filter(log => log.task_id === task.id)
         console.log(`Logs for task ${task.id}:`, taskLogs)
-        // emit('show-task-logs', { task, logs: taskLogs })
+        // You could implement a modal here
       } catch (error) {
         emit('error', 'Failed to fetch task logs: ' + error.message)
       }
     }
 
-    // Auto-refresh every 5 seconds
-    const startAutoRefresh = () => {
+    onMounted(() => {
+      fetchTasks()
+      
+      // Auto-refresh every 5 seconds
       setInterval(() => {
         if (!loading.value) {
           fetchTasks()
         }
       }, 5000)
-    }
-
-    onMounted(() => {
-      fetchTasks()
-      startAutoRefresh()
     })
 
     // Expose method for parent component
@@ -245,6 +273,8 @@ export default {
       formatDateTime,
       getTaskIcon,
       getStatusIcon,
+      getStatusBadgeClass,
+      getTaskBorderClass,
       getFilteredTasks,
       fetchTasks,
       loadMore,
@@ -255,377 +285,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.card {
-  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  border-radius: 16px;
-  padding: 28px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-}
-
-.full-width {
-  grid-column: 1 / -1;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.card-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #667eea;
-  margin: 0;
-}
-
-.tasks-header {
-  margin-bottom: 20px;
-}
-
-.filter-tabs {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.filter-tab {
-  padding: 8px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(45, 45, 68, 0.5);
-  color: #94a3b8;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.filter-tab:hover {
-  background: rgba(45, 45, 68, 0.8);
-  color: #e2e8f0;
-}
-
-.filter-tab.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-color: transparent;
-}
-
-.count {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.tasks-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 600px;
-  overflow-y: auto;
-}
-
-.task-item {
-  background: rgba(45, 45, 68, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s ease;
-}
-
-.task-item:hover {
-  border-color: rgba(102, 126, 234, 0.3);
-  background: rgba(45, 45, 68, 0.7);
-}
-
-.task-completed {
-  border-left: 4px solid #10b981;
-}
-
-.task-failed {
-  border-left: 4px solid #ef4444;
-}
-
-.task-running {
-  border-left: 4px solid #3b82f6;
-}
-
-.task-queued {
-  border-left: 4px solid #f59e0b;
-}
-
-.task-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.task-id {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
-
-.task-icon {
-  font-size: 16px;
-}
-
-.task-id code {
-  background: rgba(102, 126, 234, 0.2);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  color: #a5b4fc;
-}
-
-.status-badge {
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.status-queued {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.status-running {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.status-completed {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.status-failed {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.task-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.task-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.task-label {
-  font-size: 11px;
-  color: #94a3b8;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.task-value {
-  font-size: 13px;
-  color: #e2e8f0;
-  font-weight: 500;
-}
-
-.task-value.success {
-  color: #86efac;
-}
-
-.task-value.error {
-  color: #fca5a5;
-}
-
-.task-payload {
-  margin-bottom: 16px;
-}
-
-.payload-label {
-  font-size: 11px;
-  color: #94a3b8;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
-
-.payload-content {
-  background: rgba(30, 30, 46, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 12px;
-  max-height: 100px;
-  overflow-y: auto;
-}
-
-.payload-content pre {
-  margin: 0;
-  font-family: 'Monaco', 'Menlo', monospace;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #d1d5db;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.task-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-xs {
-  padding: 4px 8px;
-  font-size: 10px;
-}
-
-.btn-secondary {
-  background: rgba(75, 85, 99, 0.8);
-  color: white;
-  border: 1px solid rgba(156, 163, 175, 0.3);
-}
-
-.btn-outline {
-  background: transparent;
-  color: #a5b4fc;
-  border: 1px solid rgba(165, 180, 252, 0.3);
-}
-
-.btn-outline:hover:not(:disabled) {
-  background: rgba(165, 180, 252, 0.1);
-  border-color: rgba(165, 180, 252, 0.5);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.load-more {
-  text-align: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.empty-state, .loading-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: #64748b;
-}
-
-.empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-.empty-text {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.empty-subtext {
-  font-size: 14px;
-  opacity: 0.8;
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.loading-spinner.large {
-  width: 32px;
-  height: 32px;
-  border-width: 3px;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Custom scrollbar */
-.tasks-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.tasks-list::-webkit-scrollbar-track {
-  background: rgba(45, 45, 68, 0.5);
-  border-radius: 3px;
-}
-
-.tasks-list::-webkit-scrollbar-thumb {
-  background: rgba(102, 126, 234, 0.5);
-  border-radius: 3px;
-}
-
-.tasks-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(102, 126, 234, 0.7);
-}
-
-@media (max-width: 768px) {
-  .task-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .task-details {
-    grid-template-columns: 1fr;
-  }
-  
-  .filter-tabs {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  
-  .filter-tab {
-    padding: 6px 12px;
-    font-size: 11px;
-  }
-}
-</style>
